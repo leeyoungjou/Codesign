@@ -15,5 +15,4 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 
-Native App Key: 4b338d76735e8d1759948d9f69a74523
-JavaScript Key: dd92cc62de7e42db66489de22b708feb
+Client ID: lvipoxk1bz
