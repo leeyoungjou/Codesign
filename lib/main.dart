@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 void main() {
   runApp(const MyApp());
@@ -78,9 +79,7 @@ class NFCAuthPage extends StatefulWidget {
 class _NFCAuthPageState extends State<NFCAuthPage> {
   String _statusText = 'NFC 태그를 가까이 대세요';
 
-  // 임시 인증 확인 버튼 (NFC 없을 때)
   void _mockAuthentication() {
-    // 인증 완료 화면으로 이동 (1초 후 자동으로 GPS 화면으로)
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -114,8 +113,6 @@ class _NFCAuthPageState extends State<NFCAuthPage> {
                 style: const TextStyle(fontSize: 20),
               ),
               const SizedBox(height: 60),
-              
-              // 임시 확인 버튼
               ElevatedButton(
                 onPressed: _mockAuthentication,
                 style: ElevatedButton.styleFrom(
@@ -140,7 +137,7 @@ class _NFCAuthPageState extends State<NFCAuthPage> {
   }
 }
 
-// 3. 인증 완료 화면 (1초만 표시)
+// 3. 인증 완료 화면
 class AuthSuccessPage extends StatefulWidget {
   final String userName;
 
@@ -154,7 +151,6 @@ class _AuthSuccessPageState extends State<AuthSuccessPage> {
   @override
   void initState() {
     super.initState();
-    // 1초 후 GPS 화면으로 자동 이동
     Future.delayed(const Duration(seconds: 1), () {
       if (mounted) {
         Navigator.pushReplacement(
@@ -205,7 +201,7 @@ class _AuthSuccessPageState extends State<AuthSuccessPage> {
   }
 }
 
-// 4. GPS 위치 확인 화면
+// 4. GPS 위치 확인 화면 (네이버 지도)
 class GPSCheckPage extends StatefulWidget {
   final String userName;
 
@@ -219,6 +215,7 @@ class _GPSCheckPageState extends State<GPSCheckPage> {
   String _statusText = 'GPS 위치 확인 중...';
   Position? _currentPosition;
   bool _isLoading = true;
+  late WebViewController _webViewController;
 
   @override
   void initState() {
@@ -226,12 +223,53 @@ class _GPSCheckPageState extends State<GPSCheckPage> {
     _getCurrentLocation();
   }
 
-  // GPS 위치 가져오기
+  void _initializeWebView(double lat, double lng) {
+    _webViewController = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..loadHtmlString(
+        _getNaverMapHtml(lat, lng),
+        baseUrl: 'http://localhost',  
+      );
+  }
+
+  String _getNaverMapHtml(double lat, double lng) {
+    return '''
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>네이버 지도</title>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; }
+        #map { width: 100%; height: 100%; }
+    </style>
+    <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=lvipoxk1bz"></script>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        var mapOptions = {
+            center: new naver.maps.LatLng($lat, $lng),
+            zoom: 16
+        };
+        
+        var map = new naver.maps.Map('map', mapOptions);
+        
+        var marker = new naver.maps.Marker({
+            position: new naver.maps.LatLng($lat, $lng),
+            map: map
+        });
+    </script>
+</body>
+</html>
+    ''';
+  }
+
   Future<void> _getCurrentLocation() async {
     bool serviceEnabled;
     LocationPermission permission;
 
-    // GPS 서비스 활성화 확인
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       setState(() {
@@ -241,7 +279,6 @@ class _GPSCheckPageState extends State<GPSCheckPage> {
       return;
     }
 
-    // 위치 권한 확인
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -262,16 +299,20 @@ class _GPSCheckPageState extends State<GPSCheckPage> {
       return;
     }
 
-    // 현재 위치 가져오기
     try {
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
+      
       setState(() {
         _currentPosition = position;
         _statusText = 'GPS 위치 확인 완료!';
         _isLoading = false;
       });
+      
+      // GPS 위치로 지도 초기화
+      _initializeWebView(position.latitude, position.longitude);
+      
     } catch (e) {
       setState(() {
         _statusText = 'GPS 오류: $e';
@@ -288,127 +329,104 @@ class _GPSCheckPageState extends State<GPSCheckPage> {
         backgroundColor: Colors.blue,
         automaticallyImplyLeading: false,
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(30.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                _isLoading ? Icons.location_searching : Icons.location_on,
-                size: 120,
-                color: _isLoading ? Colors.orange : Colors.green,
-              ),
-              const SizedBox(height: 40),
-              Text(
-                _statusText,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 40),
-              
-              // GPS 정보 표시
-              if (_currentPosition != null)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(color: Colors.blue),
-                  ),
-                  child: Column(
-                    children: [
-                      const Text(
-                        '현재 위치',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('위도:', style: TextStyle(fontSize: 16)),
-                          Text(
-                            _currentPosition!.latitude.toStringAsFixed(6),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('경도:', style: TextStyle(fontSize: 16)),
-                          Text(
-                            _currentPosition!.longitude.toStringAsFixed(6),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('정확도:', style: TextStyle(fontSize: 16)),
-                          Text(
-                            '±${_currentPosition!.accuracy.toStringAsFixed(1)}m',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            color: Colors.blue.withOpacity(0.1),
+            child: Column(
+              children: [
+                Icon(
+                  _isLoading ? Icons.location_searching : Icons.location_on,
+                  size: 60,
+                  color: _isLoading ? Colors.orange : Colors.green,
                 ),
-              
-              const SizedBox(height: 60),
-              
-              // 다음 단계 버튼
-              if (_currentPosition != null)
-                ElevatedButton(
+                const SizedBox(height: 10),
+                Text(
+                  _statusText,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                if (_currentPosition != null) ...[
+                  const SizedBox(height: 15),
+                  Container(
+                    padding: const EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.blue),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('위도:', style: TextStyle(fontSize: 14)),
+                            Text(
+                              _currentPosition!.latitude.toStringAsFixed(6),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 5),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('경도:', style: TextStyle(fontSize: 14)),
+                            Text(
+                              _currentPosition!.longitude.toStringAsFixed(6),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Expanded(
+            child: _currentPosition != null
+                ? WebViewWidget(controller: _webViewController)
+                : const Center(child: CircularProgressIndicator()),
+          ),
+          Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                if (_currentPosition != null)
+                  ElevatedButton(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('다음 단계 준비 중...')),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                      backgroundColor: Colors.blue,
+                      minimumSize: const Size(double.infinity, 50),
+                    ),
+                    child: const Text(
+                      '다음',
+                      style: TextStyle(fontSize: 16, color: Colors.white),
+                    ),
+                  ),
+                const SizedBox(height: 10),
+                TextButton(
                   onPressed: () {
-                    // 여기에 다음 단계 추가 (분양지 정보 등)
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('다음 단계 준비 중...')),
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => const StartPage()),
+                      (route) => false,
                     );
                   },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                    backgroundColor: Colors.blue,
-                  ),
-                  child: const Text(
-                    '다음',
-                    style: TextStyle(fontSize: 16, color: Colors.white),
-                  ),
+                  child: const Text('처음으로'),
                 ),
-              
-              const SizedBox(height: 20),
-              
-              // 처음으로 버튼
-              TextButton(
-                onPressed: () {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => const StartPage()),
-                    (route) => false,
-                  );
-                },
-                child: const Text('처음으로'),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
