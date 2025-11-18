@@ -34,34 +34,36 @@ class StartPage extends StatelessWidget {
         title: const Text('NFC 인증'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.nfc, size: 120, color: Colors.blue),
-            const SizedBox(height: 40),
-            const Text(
-              'NFC 인증 시스템',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 60),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const NFCAuthPage()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 20),
-                backgroundColor: Colors.blue,
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.nfc, size: 120, color: Colors.blue),
+              const SizedBox(height: 40),
+              const Text(
+                'NFC 인증 시스템',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
-              child: const Text(
-                'NFC 인증 시작',
-                style: TextStyle(fontSize: 18, color: Colors.white),
+              const SizedBox(height: 60),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const NFCAuthPage()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 20),
+                  backgroundColor: Colors.blue,
+                ),
+                child: const Text(
+                  'NFC 인증 시작',
+                  style: TextStyle(fontSize: 18, color: Colors.white),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -95,41 +97,43 @@ class _NFCAuthPageState extends State<NFCAuthPage> {
         title: const Text('NFC 인증 중'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(30.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.nfc,
-                size: 150,
-                color: Colors.grey,
-              ),
-              const SizedBox(height: 40),
-              Text(
-                _statusText,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 20),
-              ),
-              const SizedBox(height: 60),
-              ElevatedButton(
-                onPressed: _mockAuthentication,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                  backgroundColor: Colors.green,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(30.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.nfc,
+                  size: 150,
+                  color: Colors.grey,
                 ),
-                child: const Text(
-                  '확인 (임시)',
-                  style: TextStyle(fontSize: 16, color: Colors.white),
+                const SizedBox(height: 40),
+                Text(
+                  _statusText,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 20),
                 ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                '※ NFC 없을 때 테스트용',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ],
+                const SizedBox(height: 60),
+                ElevatedButton(
+                  onPressed: _mockAuthentication,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                    backgroundColor: Colors.green,
+                  ),
+                  child: const Text(
+                    '확인 (임시)',
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  '※ NFC 없을 때 테스트용',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -167,34 +171,36 @@ class _AuthSuccessPageState extends State<AuthSuccessPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.green,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.check_circle,
-              size: 150,
-              color: Colors.white,
-            ),
-            const SizedBox(height: 40),
-            const Text(
-              '사용자 인증이\n확인됐습니다!',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.check_circle,
+                size: 150,
                 color: Colors.white,
               ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              widget.userName,
-              style: const TextStyle(
-                fontSize: 24,
-                color: Colors.white70,
+              const SizedBox(height: 40),
+              const Text(
+                '사용자 인증이\n확인됐습니다!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              Text(
+                widget.userName,
+                style: const TextStyle(
+                  fontSize: 24,
+                  color: Colors.white70,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -329,104 +335,68 @@ class _GPSCheckPageState extends State<GPSCheckPage> {
         backgroundColor: Colors.blue,
         automaticallyImplyLeading: false,
       ),
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            color: Colors.blue.withOpacity(0.1),
-            child: Column(
-              children: [
-                Icon(
-                  _isLoading ? Icons.location_searching : Icons.location_on,
-                  size: 60,
-                  color: _isLoading ? Colors.orange : Colors.green,
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  _statusText,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                if (_currentPosition != null) ...[
-                  const SizedBox(height: 15),
-                  Container(
-                    padding: const EdgeInsets.all(15),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.blue),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: _currentPosition != null
+                  ? WebViewWidget(controller: _webViewController)
+                  : Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.location_searching,
+                            size: 60,
+                            color: Colors.orange,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            _statusText,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('위도:', style: TextStyle(fontSize: 14)),
-                            Text(
-                              _currentPosition!.latitude.toStringAsFixed(6),
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 5),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('경도:', style: TextStyle(fontSize: 14)),
-                            Text(
-                              _currentPosition!.longitude.toStringAsFixed(6),
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
             ),
-          ),
-          Expanded(
-            child: _currentPosition != null
-                ? WebViewWidget(controller: _webViewController)
-                : const Center(child: CircularProgressIndicator()),
-          ),
-          Container(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                if (_currentPosition != null)
-                  ElevatedButton(
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  if (_currentPosition != null)
+                    ElevatedButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('다음 단계 준비 중...')),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                        backgroundColor: Colors.blue,
+                        minimumSize: const Size(double.infinity, 50),
+                      ),
+                      child: const Text(
+                        '다음',
+                        style: TextStyle(fontSize: 16, color: Colors.white),
+                      ),
+                    ),
+                  const SizedBox(height: 10),
+                  TextButton(
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('다음 단계 준비 중...')),
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (context) => const StartPage()),
+                        (route) => false,
                       );
                     },
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                      backgroundColor: Colors.blue,
-                      minimumSize: const Size(double.infinity, 50),
-                    ),
-                    child: const Text(
-                      '다음',
-                      style: TextStyle(fontSize: 16, color: Colors.white),
-                    ),
+                    child: const Text('처음으로'),
                   ),
-                const SizedBox(height: 10),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => const StartPage()),
-                      (route) => false,
-                    );
-                  },
-                  child: const Text('처음으로'),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
