@@ -63,10 +63,7 @@ class HomePage extends StatelessWidget {
                 const SizedBox(height: 10),
                 const Text(
                   '빠르고 편리한 이동',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.white70,
-                  ),
+                  style: TextStyle(fontSize: 18, color: Colors.white70),
                 ),
                 const SizedBox(height: 80),
                 // 대여하기 버튼
@@ -75,12 +72,16 @@ class HomePage extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const MapPage(isAuthenticated: false),
+                        builder: (context) =>
+                            const MapPage(isAuthenticated: false),
                       ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 20),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 60,
+                      vertical: 20,
+                    ),
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.blue.shade700,
                     shape: RoundedRectangleBorder(
@@ -99,12 +100,19 @@ class HomePage extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const NFCAuthPage(),
+                        builder: (context) => const MapPage(
+                          isAuthenticated: true,
+                          isCleanupMode: true,
+                        ),
                       ),
                     );
                   },
+                  // ... 나머지 스타일은 동일
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 20),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 60,
+                      vertical: 20,
+                    ),
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.green.shade700,
                     shape: RoundedRectangleBorder(
@@ -128,8 +136,13 @@ class HomePage extends StatelessWidget {
 // 2. 지도 화면
 class MapPage extends StatefulWidget {
   final bool isAuthenticated;
+  final bool isCleanupMode; // 추가
 
-  const MapPage({super.key, required this.isAuthenticated});
+  const MapPage({
+    super.key,
+    required this.isAuthenticated,
+    this.isCleanupMode = false, // 추가
+  });
 
   @override
   State<MapPage> createState() => _MapPageState();
@@ -174,7 +187,7 @@ class _MapPageState extends State<MapPage> {
   // 구역 체크 (프로토타입용 mock 로직)
   String _checkZone(double lat, double lng) {
     double hash = (lat * 1000 + lng * 1000) % 10;
-    
+
     if (hash < 2) {
       return 'restricted'; // 빨간 구역 (반납 불가)
     } else if (hash < 4) {
@@ -189,19 +202,16 @@ class _MapPageState extends State<MapPage> {
   void _initializeWebView(double lat, double lng) {
     _webViewController = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..loadHtmlString(
-        _getNaverMapHtml(lat, lng),
-        baseUrl: 'http://localhost',
-      );
+      ..loadHtmlString(_getNaverMapHtml(lat, lng), baseUrl: 'http://localhost');
   }
 
   // 구역 폴리곤 업데이트
   void _updateZonePolygon() {
     if (_currentPosition == null) return;
-    
+
     String polygonColor = '';
     String polygonOpacity = '0.3';
-    
+
     if (_currentZone == 'normal') {
       polygonColor = '#4285F4'; // 파란색
     } else if (_currentZone == 'extra_cost') {
@@ -211,13 +221,14 @@ class _MapPageState extends State<MapPage> {
       _webViewController.runJavaScript('removePolygon();');
       return;
     }
-    
+
     // 현재 위치 주변에 다각형 폴리곤 생성 (예시)
     double lat = _currentPosition!.latitude;
     double lng = _currentPosition!.longitude;
-    
+
     // 불규칙한 다각형 좌표 생성
-    String polygonCoords = '''
+    String polygonCoords =
+        '''
       [
         new naver.maps.LatLng(${lat + 0.002}, ${lng - 0.003}),
         new naver.maps.LatLng(${lat + 0.003}, ${lng + 0.001}),
@@ -227,7 +238,7 @@ class _MapPageState extends State<MapPage> {
         new naver.maps.LatLng(${lat - 0.001}, ${lng - 0.002})
       ]
     ''';
-    
+
     _webViewController.runJavaScript('''
       updatePolygon($polygonCoords, '$polygonColor', $polygonOpacity);
     ''');
@@ -310,9 +321,9 @@ class _MapPageState extends State<MapPage> {
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('GPS를 켜주세요')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('GPS를 켜주세요')));
       }
       return;
     }
@@ -346,7 +357,7 @@ class _MapPageState extends State<MapPage> {
       });
 
       _initializeWebView(position.latitude, position.longitude);
-      
+
       // 초기 폴리곤 표시
       Future.delayed(const Duration(milliseconds: 1000), () {
         _updateZonePolygon();
@@ -410,7 +421,9 @@ class _MapPageState extends State<MapPage> {
               Text('추가 비용 안내'),
             ],
           ),
-          content: const Text('이 지역은 추가 비용이 발생하는 지역입니다.\n그래도 반납하시겠습니까?\n\n추가 비용: 2,000원'),
+          content: const Text(
+            '이 지역은 추가 비용이 발생하는 지역입니다.\n그래도 반납하시겠습니까?\n\n추가 비용: 2,000원',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -422,9 +435,8 @@ class _MapPageState extends State<MapPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const PaymentMethodPage(
-                      extraCost: 2000,
-                    ),
+                    builder: (context) =>
+                        const PaymentMethodPage(extraCost: 2000),
                   ),
                 );
               },
@@ -438,9 +450,7 @@ class _MapPageState extends State<MapPage> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => const PaymentMethodPage(
-            extraCost: 0,
-          ),
+          builder: (context) => const PaymentMethodPage(extraCost: 0),
         ),
       );
     }
@@ -470,10 +480,7 @@ class _MapPageState extends State<MapPage> {
             ),
             const Text(
               '🔧 테스트용 구역 선택',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             _buildZoneOption(
@@ -514,9 +521,15 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  Widget _buildZoneOption(String title, String description, Color color, IconData icon, String zoneType) {
+  Widget _buildZoneOption(
+    String title,
+    String description,
+    Color color,
+    IconData icon,
+    String zoneType,
+  ) {
     bool isSelected = _currentZone == zoneType;
-    
+
     return InkWell(
       onTap: () {
         setState(() {
@@ -562,16 +575,12 @@ class _MapPageState extends State<MapPage> {
                   const SizedBox(height: 4),
                   Text(
                     description,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                   ),
                 ],
               ),
             ),
-            if (isSelected)
-              Icon(Icons.check_circle, color: color, size: 24),
+            if (isSelected) Icon(Icons.check_circle, color: color, size: 24),
           ],
         ),
       ),
@@ -602,10 +611,7 @@ class _MapPageState extends State<MapPage> {
             ),
             const Text(
               '🔧 테스트용 속도 선택',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             _buildSpeedOption('정지', '0 km/h', Colors.blueGrey, 0.0),
@@ -622,9 +628,14 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  Widget _buildSpeedOption(String title, String speedText, Color color, double speed) {
+  Widget _buildSpeedOption(
+    String title,
+    String speedText,
+    Color color,
+    double speed,
+  ) {
     bool isSelected = (_currentSpeed - speed).abs() < 0.1;
-    
+
     return InkWell(
       onTap: () {
         setState(() {
@@ -669,16 +680,12 @@ class _MapPageState extends State<MapPage> {
                   const SizedBox(height: 4),
                   Text(
                     speedText,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                   ),
                 ],
               ),
             ),
-            if (isSelected)
-              Icon(Icons.check_circle, color: color, size: 24),
+            if (isSelected) Icon(Icons.check_circle, color: color, size: 24),
           ],
         ),
       ),
@@ -709,7 +716,7 @@ class _MapPageState extends State<MapPage> {
                       ],
                     ),
                   ),
-            
+
             // 속도 표시 (인증 후에만)
             if (widget.isAuthenticated)
               Positioned(
@@ -719,7 +726,10 @@ class _MapPageState extends State<MapPage> {
                   behavior: HitTestBehavior.opaque,
                   onTap: _showDebugButtons ? _showSpeedSelector : null,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black87,
                       borderRadius: BorderRadius.circular(20),
@@ -750,17 +760,14 @@ class _MapPageState extends State<MapPage> {
                         ),
                         const Text(
                           'km/h',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                          ),
+                          style: TextStyle(color: Colors.white70, fontSize: 14),
                         ),
                       ],
                     ),
                   ),
                 ),
               ),
-            
+
             // 구역 표시 (인증 후에만)
             if (widget.isAuthenticated)
               Positioned(
@@ -770,15 +777,18 @@ class _MapPageState extends State<MapPage> {
                   behavior: HitTestBehavior.opaque,
                   onTap: _showDebugButtons ? _showZoneSelector : null,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: _currentZone == 'restricted'
                           ? Colors.red
                           : _currentZone == 'extra_cost'
-                              ? Colors.grey.shade700
-                              : _currentZone == 'not_folded'
-                                  ? Colors.orange
-                                  : Colors.blue,
+                          ? Colors.grey.shade700
+                          : _currentZone == 'not_folded'
+                          ? Colors.orange
+                          : Colors.blue,
                       borderRadius: BorderRadius.circular(15),
                       boxShadow: _showDebugButtons
                           ? [
@@ -797,10 +807,10 @@ class _MapPageState extends State<MapPage> {
                           _currentZone == 'restricted'
                               ? Icons.block
                               : _currentZone == 'extra_cost'
-                                  ? Icons.attach_money
-                                  : _currentZone == 'not_folded'
-                                      ? Icons.warning_amber
-                                      : Icons.check_circle,
+                              ? Icons.attach_money
+                              : _currentZone == 'not_folded'
+                              ? Icons.warning_amber
+                              : Icons.check_circle,
                           color: Colors.white,
                           size: 20,
                         ),
@@ -809,10 +819,10 @@ class _MapPageState extends State<MapPage> {
                           _currentZone == 'restricted'
                               ? '반납 불가'
                               : _currentZone == 'extra_cost'
-                                  ? '추가 비용'
-                                  : _currentZone == 'not_folded'
-                                      ? '접히지 않음'
-                                      : '정상 구역',
+                              ? '추가 비용'
+                              : _currentZone == 'not_folded'
+                              ? '접히지 않음'
+                              : '정상 구역',
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -823,7 +833,7 @@ class _MapPageState extends State<MapPage> {
                   ),
                 ),
               ),
-            
+
             // 하단 버튼
             Positioned(
               bottom: 0,
@@ -871,12 +881,109 @@ class _MapPageState extends State<MapPage> {
                             SizedBox(width: 10),
                             Text(
                               'NFC 태그 인증',
-                              style: TextStyle(fontSize: 18, color: Colors.white),
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.white,
+                              ),
                             ),
                           ],
                         ),
                       )
-                    else
+                    else if (widget.isCleanupMode) // 정리하기 모드
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () {
+                                // 정리 완료
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const CleanupSuccessPage(),
+                                  ),
+                                  (route) => false,
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 18,
+                                ),
+                                backgroundColor: Colors.green,
+                                minimumSize: const Size(0, 56),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                '정리하기',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () {
+                                // 정리 중단 확인 팝업
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('정리 중단'),
+                                    content: const Text(
+                                      '정리를 중단하시겠습니까?\n중단 시 포인트가 지급되지 않습니다.',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('계속하기'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          Navigator.pushAndRemoveUntil(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const CleanupCancelPage(),
+                                            ),
+                                            (route) => false,
+                                          );
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red,
+                                        ),
+                                        child: const Text('중단하기'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 18,
+                                ),
+                                backgroundColor: Colors.orange,
+                                minimumSize: const Size(0, 56),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                '정리중단',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    else // 일반 대여하기 모드
                       ElevatedButton(
                         onPressed: _handleReturn,
                         style: ElevatedButton.styleFrom(
@@ -894,7 +1001,10 @@ class _MapPageState extends State<MapPage> {
                             SizedBox(width: 10),
                             Text(
                               '반납하기',
-                              style: TextStyle(fontSize: 18, color: Colors.white),
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.white,
+                              ),
                             ),
                           ],
                         ),
@@ -910,7 +1020,6 @@ class _MapPageState extends State<MapPage> {
   }
 }
 
-
 // 결제 수단 화면
 class PaymentMethodPage extends StatefulWidget {
   final int extraCost;
@@ -925,10 +1034,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('결제 수단'),
-        backgroundColor: Colors.blue,
-      ),
+      appBar: AppBar(title: const Text('결제 수단'), backgroundColor: Colors.blue),
       body: SafeArea(
         child: Column(
           children: [
@@ -958,7 +1064,10 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                             padding: const EdgeInsets.all(18),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [Colors.blue.shade700, Colors.blue.shade900],
+                                colors: [
+                                  Colors.blue.shade700,
+                                  Colors.blue.shade900,
+                                ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
@@ -976,7 +1085,8 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     const Text(
                                       '신한카드',
@@ -987,7 +1097,10 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                                       ),
                                     ),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 4,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: Colors.white.withOpacity(0.3),
                                         borderRadius: BorderRadius.circular(20),
@@ -1009,7 +1122,8 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                                   size: 60,
                                 ),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     const Text(
@@ -1021,13 +1135,16 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                                       ),
                                     ),
                                     Column(
-                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
                                       children: [
                                         Text(
                                           '현재 적립 포인트 : 9000P',
                                           style: TextStyle(
                                             fontSize: 11,
-                                            color: Colors.white.withOpacity(0.9),
+                                            color: Colors.white.withOpacity(
+                                              0.9,
+                                            ),
                                           ),
                                         ),
                                         const SizedBox(height: 2),
@@ -1035,7 +1152,9 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                                           '운전 면허 등록 여부 : Y',
                                           style: TextStyle(
                                             fontSize: 11,
-                                            color: Colors.white.withOpacity(0.9),
+                                            color: Colors.white.withOpacity(
+                                              0.9,
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -1050,54 +1169,58 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                     ),
                     const SizedBox(height: 15),
                     // 카드 추가 버튼
-Center(
-  child: Container(
-    constraints: const BoxConstraints(maxWidth: 400),
-    child: AspectRatio(
-      aspectRatio: 1.586,  // 신한카드와 동일한 비율
-      child: InkWell(
-        onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('카드 추가 기능은 준비 중입니다'),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.grey.shade300,
-              width: 2,
-              style: BorderStyle.solid,
-            ),
-          ),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.add_circle_outline, color: Colors.grey.shade600, size: 40),
-                const SizedBox(height: 10),
-                Text(
-                  '카드 추가하기',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    ),
-  ),
-),
+                    Center(
+                      child: Container(
+                        constraints: const BoxConstraints(maxWidth: 400),
+                        child: AspectRatio(
+                          aspectRatio: 1.586, // 신한카드와 동일한 비율
+                          child: InkWell(
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('카드 추가 기능은 준비 중입니다'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.all(18),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.grey.shade300,
+                                  width: 2,
+                                  style: BorderStyle.solid,
+                                ),
+                              ),
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.add_circle_outline,
+                                      color: Colors.grey.shade600,
+                                      size: 40,
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      '카드 추가하기',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -1121,9 +1244,8 @@ Center(
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => PaymentAmountPage(
-                        extraCost: widget.extraCost,
-                      ),
+                      builder: (context) =>
+                          PaymentAmountPage(extraCost: widget.extraCost),
                     ),
                   );
                 },
@@ -1176,10 +1298,7 @@ class _PaymentAmountPageState extends State<PaymentAmountPage> {
     final int totalPrice = subtotal - pointsToUse;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('금액 결제'),
-        backgroundColor: Colors.blue,
-      ),
+      appBar: AppBar(title: const Text('금액 결제'), backgroundColor: Colors.blue),
       body: SafeArea(
         child: Column(
           children: [
@@ -1245,9 +1364,7 @@ class _PaymentAmountPageState extends State<PaymentAmountPage> {
                               ),
                               Text(
                                 '${basePrice.toString()}원',
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                ),
+                                style: const TextStyle(fontSize: 15),
                               ),
                             ],
                           ),
@@ -1259,9 +1376,7 @@ class _PaymentAmountPageState extends State<PaymentAmountPage> {
                               children: [
                                 const Text(
                                   '추가 비용',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                  ),
+                                  style: TextStyle(fontSize: 15),
                                 ),
                                 Text(
                                   '+${widget.extraCost.toString()}원',
@@ -1292,22 +1407,28 @@ class _PaymentAmountPageState extends State<PaymentAmountPage> {
                                       controller: _pointsController,
                                       keyboardType: TextInputType.number,
                                       textAlign: TextAlign.right,
-                                      textAlignVertical: TextAlignVertical.bottom,
-                                      style: const TextStyle(fontSize: 15, letterSpacing: 0),
+                                      textAlignVertical:
+                                          TextAlignVertical.bottom,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        letterSpacing: 0,
+                                      ),
                                       decoration: InputDecoration(
                                         hintText: '0',
                                         hintStyle: const TextStyle(
                                           fontSize: 15,
-                                          letterSpacing: 3,  // hint도 동일하게
+                                          letterSpacing: 3, // hint도 동일하게
                                         ),
                                         contentPadding: const EdgeInsets.only(
                                           left: 12,
-                                          right: 0,  
+                                          right: 0,
                                           top: 8,
                                           bottom: 3,
                                         ),
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
                                         isDense: true,
                                       ),
@@ -1381,7 +1502,7 @@ class _PaymentAmountPageState extends State<PaymentAmountPage> {
                     );
                     return;
                   }
-                  
+
                   if (totalPrice < 0) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -1396,9 +1517,8 @@ class _PaymentAmountPageState extends State<PaymentAmountPage> {
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ReturnSuccessPage(
-                        totalPrice: subtotal,
-                      ),
+                      builder: (context) =>
+                          ReturnSuccessPage(totalPrice: subtotal),
                     ),
                     (route) => false,
                   );
@@ -1413,7 +1533,11 @@ class _PaymentAmountPageState extends State<PaymentAmountPage> {
                 ),
                 child: const Text(
                   '결제하기',
-                  style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -1457,10 +1581,7 @@ class _NFCAuthPageState extends State<NFCAuthPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('NFC 인증'),
-        backgroundColor: Colors.blue,
-      ),
+      appBar: AppBar(title: const Text('NFC 인증'), backgroundColor: Colors.blue),
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -1484,7 +1605,10 @@ class _NFCAuthPageState extends State<NFCAuthPage> {
                   ElevatedButton(
                     onPressed: _mockAuthentication,
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 40,
+                        vertical: 15,
+                      ),
                       backgroundColor: Colors.green,
                     ),
                     child: const Text(
@@ -1543,11 +1667,7 @@ class _AuthSuccessPageState extends State<AuthSuccessPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.check_circle,
-                size: 150,
-                color: Colors.white,
-              ),
+              const Icon(Icons.check_circle, size: 150, color: Colors.white),
               const SizedBox(height: 40),
               const Text(
                 '인증 완료!',
@@ -1561,18 +1681,12 @@ class _AuthSuccessPageState extends State<AuthSuccessPage> {
               const SizedBox(height: 20),
               Text(
                 widget.userName,
-                style: const TextStyle(
-                  fontSize: 24,
-                  color: Colors.white70,
-                ),
+                style: const TextStyle(fontSize: 24, color: Colors.white70),
               ),
               const SizedBox(height: 40),
               const Text(
                 '안전 운행하세요!',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.white70,
-                ),
+                style: TextStyle(fontSize: 18, color: Colors.white70),
               ),
             ],
           ),
@@ -1612,7 +1726,7 @@ class _ReturnSuccessPageState extends State<ReturnSuccessPage> {
     // 적립 포인트 계산 (기본 요금의 1%, 추가 비용 제외)
     const int basePrice = 2300;
     final int rewardPoints = (basePrice * 0.01).round();
-    
+
     return Scaffold(
       backgroundColor: Colors.blue,
       body: SafeArea(
@@ -1638,10 +1752,7 @@ class _ReturnSuccessPageState extends State<ReturnSuccessPage> {
               const SizedBox(height: 20),
               const Text(
                 '이용해주셔서 감사합니다',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.white70,
-                ),
+                style: TextStyle(fontSize: 18, color: Colors.white70),
               ),
               const SizedBox(height: 60),
               Container(
@@ -1707,6 +1818,170 @@ class _ReturnSuccessPageState extends State<ReturnSuccessPage> {
                       ],
                     ),
                   ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// 정리 완료 화면
+class CleanupSuccessPage extends StatefulWidget {
+  const CleanupSuccessPage({super.key});
+
+  @override
+  State<CleanupSuccessPage> createState() => _CleanupSuccessPageState();
+}
+
+class _CleanupSuccessPageState extends State<CleanupSuccessPage> {
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+          (route) => false,
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.green,
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.check_circle_outline,
+                size: 150,
+                color: Colors.white,
+              ),
+              const SizedBox(height: 40),
+              const Text(
+                '정리 완료!',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 60),
+              Container(
+                padding: const EdgeInsets.all(20),
+                margin: const EdgeInsets.symmetric(horizontal: 40),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: const Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '적립 포인트',
+                          style: TextStyle(color: Colors.white70, fontSize: 16),
+                        ),
+                        Text(
+                          '500원',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '포인트 총합',
+                          style: TextStyle(color: Colors.white70, fontSize: 16),
+                        ),
+                        Text(
+                          '9500원',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// 정리 중단 화면
+class CleanupCancelPage extends StatefulWidget {
+  const CleanupCancelPage({super.key});
+
+  @override
+  State<CleanupCancelPage> createState() => _CleanupCancelPageState();
+}
+
+class _CleanupCancelPageState extends State<CleanupCancelPage> {
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+          (route) => false,
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.orange,
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.cancel_outlined,
+                size: 150,
+                color: Colors.white,
+              ),
+              const SizedBox(height: 40),
+              const Text(
+                '정리중단!',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                '포인트가 지급되지 않습니다',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: Colors.white70,
                 ),
               ),
             ],
