@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// 1. 홈 화면
+// 1. 홈 화면 (수정됨)
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -69,6 +69,7 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 80),
+                // 대여하기 버튼
                 ElevatedButton(
                   onPressed: () {
                     Navigator.push(
@@ -87,7 +88,31 @@ class HomePage extends StatelessWidget {
                     ),
                   ),
                   child: const Text(
-                    '시작하기',
+                    '대여하기',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // 정리하기 버튼 (새로 추가)
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const NFCAuthPage(),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 20),
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.green.shade700,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  child: const Text(
+                    '정리하기',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),
