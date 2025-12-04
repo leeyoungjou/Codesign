@@ -166,15 +166,13 @@ class _MapPageState extends State<MapPage> {
         _currentSpeed = position.speed * 3.6; // m/s to km/h
         _currentZone = _checkZone(position.latitude, position.longitude);
       });
+      // 구역이 변경되면 폴리곤 업데이트
+      _updateZonePolygon();
     });
   }
 
   // 구역 체크 (프로토타입용 mock 로직)
   String _checkZone(double lat, double lng) {
-    // 예시: 특정 좌표 범위에 따라 구역 구분
-    // 실제로는 백엔드 API나 GeoJSON 데이터를 사용해야 함
-    
-    // 현재 위치 기준으로 간단한 mock 로직
     double hash = (lat * 1000 + lng * 1000) % 10;
     
     if (hash < 2) {
@@ -184,7 +182,7 @@ class _MapPageState extends State<MapPage> {
     } else if (hash < 6) {
       return 'not_folded'; // 킥보드 접히지 않음 (반납 불가)
     } else {
-      return 'normal'; // 노란 구역 (정상)
+      return 'normal'; // 파란 구역 (정상)
     }
   }
 
@@ -195,6 +193,44 @@ class _MapPageState extends State<MapPage> {
         _getNaverMapHtml(lat, lng),
         baseUrl: 'http://localhost',
       );
+  }
+
+  // 구역 폴리곤 업데이트
+  void _updateZonePolygon() {
+    if (_currentPosition == null) return;
+    
+    String polygonColor = '';
+    String polygonOpacity = '0.3';
+    
+    if (_currentZone == 'normal') {
+      polygonColor = '#4285F4'; // 파란색
+    } else if (_currentZone == 'extra_cost') {
+      polygonColor = '#757575'; // 회색
+    } else {
+      // restricted, not_folded는 폴리곤 표시 안함
+      _webViewController.runJavaScript('removePolygon();');
+      return;
+    }
+    
+    // 현재 위치 주변에 다각형 폴리곤 생성 (예시)
+    double lat = _currentPosition!.latitude;
+    double lng = _currentPosition!.longitude;
+    
+    // 불규칙한 다각형 좌표 생성
+    String polygonCoords = '''
+      [
+        new naver.maps.LatLng(${lat + 0.002}, ${lng - 0.003}),
+        new naver.maps.LatLng(${lat + 0.003}, ${lng + 0.001}),
+        new naver.maps.LatLng(${lat + 0.002}, ${lng + 0.004}),
+        new naver.maps.LatLng(${lat - 0.001}, ${lng + 0.003}),
+        new naver.maps.LatLng(${lat - 0.002}, ${lng + 0.001}),
+        new naver.maps.LatLng(${lat - 0.001}, ${lng - 0.002})
+      ]
+    ''';
+    
+    _webViewController.runJavaScript('''
+      updatePolygon($polygonCoords, '$polygonColor', $polygonOpacity);
+    ''');
   }
 
   String _getNaverMapHtml(double lat, double lng) {
@@ -229,6 +265,35 @@ class _MapPageState extends State<MapPage> {
                 anchor: new naver.maps.Point(10, 10)
             }
         });
+        
+        var currentPolygon = null;
+        
+        // 폴리곤 업데이트 함수
+        function updatePolygon(paths, color, opacity) {
+            // 기존 폴리곤 제거
+            if (currentPolygon) {
+                currentPolygon.setMap(null);
+            }
+            
+            // 새 폴리곤 생성
+            currentPolygon = new naver.maps.Polygon({
+                map: map,
+                paths: paths,
+                fillColor: color,
+                fillOpacity: opacity,
+                strokeColor: color,
+                strokeOpacity: 0.6,
+                strokeWeight: 2
+            });
+        }
+        
+        // 폴리곤 제거 함수
+        function removePolygon() {
+            if (currentPolygon) {
+                currentPolygon.setMap(null);
+                currentPolygon = null;
+            }
+        }
     </script>
 </body>
 </html>
@@ -281,6 +346,11 @@ class _MapPageState extends State<MapPage> {
       });
 
       _initializeWebView(position.latitude, position.longitude);
+      
+      // 초기 폴리곤 표시
+      Future.delayed(const Duration(milliseconds: 1000), () {
+        _updateZonePolygon();
+      });
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -290,7 +360,6 @@ class _MapPageState extends State<MapPage> {
 
   void _handleReturn() {
     if (_currentZone == 'restricted') {
-      // 반납 불가 구역
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -311,7 +380,6 @@ class _MapPageState extends State<MapPage> {
         ),
       );
     } else if (_currentZone == 'not_folded') {
-      // 킥보드 접히지 않음 - 반납 불가
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -332,7 +400,6 @@ class _MapPageState extends State<MapPage> {
         ),
       );
     } else if (_currentZone == 'extra_cost') {
-      // 추가 비용 구역 경고
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -368,7 +435,6 @@ class _MapPageState extends State<MapPage> {
         ),
       );
     } else {
-      // 정상 구역 - 결제 화면으로 이동
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -413,7 +479,7 @@ class _MapPageState extends State<MapPage> {
             _buildZoneOption(
               '정상 구역',
               '반납 가능한 지역입니다',
-              Colors.amber,
+              Colors.blue,
               Icons.check_circle,
               'normal',
             ),
@@ -456,6 +522,7 @@ class _MapPageState extends State<MapPage> {
         setState(() {
           _currentZone = zoneType;
         });
+        _updateZonePolygon(); // 구역 변경 시 폴리곤 업데이트
         Navigator.pop(context);
       },
       borderRadius: BorderRadius.circular(12),
@@ -643,19 +710,14 @@ class _MapPageState extends State<MapPage> {
                     ),
                   ),
             
-            // 속도 표시 (인증 후에만) - 클릭 가능
+            // 속도 표시 (인증 후에만)
             if (widget.isAuthenticated)
               Positioned(
                 top: 20,
                 right: 20,
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: _showDebugButtons
-                      ? () {
-                          print('속도 표시 클릭됨!'); // 디버그용
-                          _showSpeedSelector();
-                        }
-                      : null,
+                  onTap: _showDebugButtons ? _showSpeedSelector : null,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     decoration: BoxDecoration(
@@ -699,19 +761,14 @@ class _MapPageState extends State<MapPage> {
                 ),
               ),
             
-            // 구역 표시 (인증 후에만) - 클릭 가능
+            // 구역 표시 (인증 후에만)
             if (widget.isAuthenticated)
               Positioned(
                 top: 20,
                 left: 20,
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: _showDebugButtons
-                      ? () {
-                          print('구역 배지 클릭됨!'); // 디버그용
-                          _showZoneSelector();
-                        }
-                      : null,
+                  onTap: _showDebugButtons ? _showZoneSelector : null,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
                     decoration: BoxDecoration(
@@ -721,7 +778,7 @@ class _MapPageState extends State<MapPage> {
                               ? Colors.grey.shade700
                               : _currentZone == 'not_folded'
                                   ? Colors.orange
-                                  : Colors.amber,
+                                  : Colors.blue,
                       borderRadius: BorderRadius.circular(15),
                       boxShadow: _showDebugButtons
                           ? [
