@@ -100,14 +100,12 @@ class HomePage extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const MapPage(
-                          isAuthenticated: true,
-                          isCleanupMode: true,
+                        builder: (context) => const NFCAuthPage(
+                          isCleanupMode: true, // 수정
                         ),
                       ),
                     );
                   },
-                  // ... 나머지 스타일은 동일
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 60,
@@ -1550,7 +1548,9 @@ class _PaymentAmountPageState extends State<PaymentAmountPage> {
 
 // 3. NFC 인증 화면
 class NFCAuthPage extends StatefulWidget {
-  const NFCAuthPage({super.key});
+  final bool isCleanupMode; // 추가
+
+  const NFCAuthPage({super.key, this.isCleanupMode = false});
 
   @override
   State<NFCAuthPage> createState() => _NFCAuthPageState();
@@ -1571,12 +1571,17 @@ class _NFCAuthPageState extends State<NFCAuthPage> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const AuthSuccessPage(userName: '홍길동'),
+            builder: (context) => AuthSuccessPage(
+              userName: '홍길동',
+              isCleanupMode: widget.isCleanupMode, // 추가
+            ),
           ),
         );
       }
     });
   }
+
+  // ... build는 동일
 
   @override
   Widget build(BuildContext context) {
@@ -1635,8 +1640,13 @@ class _NFCAuthPageState extends State<NFCAuthPage> {
 // 4. 인증 완료 화면
 class AuthSuccessPage extends StatefulWidget {
   final String userName;
+  final bool isCleanupMode; // 추가
 
-  const AuthSuccessPage({super.key, required this.userName});
+  const AuthSuccessPage({
+    super.key,
+    required this.userName,
+    this.isCleanupMode = false, // 추가
+  });
 
   @override
   State<AuthSuccessPage> createState() => _AuthSuccessPageState();
@@ -1651,12 +1661,17 @@ class _AuthSuccessPageState extends State<AuthSuccessPage> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const MapPage(isAuthenticated: true),
+            builder: (context) => MapPage(
+              isAuthenticated: true,
+              isCleanupMode: widget.isCleanupMode, // 추가
+            ),
           ),
         );
       }
     });
   }
+
+  // ... build는 동일
 
   @override
   Widget build(BuildContext context) {
@@ -1962,11 +1977,7 @@ class _CleanupCancelPageState extends State<CleanupCancelPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.cancel_outlined,
-                size: 150,
-                color: Colors.white,
-              ),
+              const Icon(Icons.cancel_outlined, size: 150, color: Colors.white),
               const SizedBox(height: 40),
               const Text(
                 '정리중단!',
@@ -1979,10 +1990,7 @@ class _CleanupCancelPageState extends State<CleanupCancelPage> {
               const SizedBox(height: 20),
               const Text(
                 '포인트가 지급되지 않습니다',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.white70,
-                ),
+                style: TextStyle(fontSize: 18, color: Colors.white70),
               ),
             ],
           ),
