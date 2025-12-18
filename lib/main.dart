@@ -16,6 +16,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: '킥보드 대여 앱',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
@@ -101,7 +102,7 @@ class HomePage extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const NFCAuthPage(
-                          isCleanupMode: true, // 수정
+                          isCleanupMode: true,
                         ),
                       ),
                     );
@@ -120,6 +121,32 @@ class HomePage extends StatelessWidget {
                   child: const Text(
                     '정리하기',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 15),
+                // 정리하기란? 텍스트 버튼 - 가이드 페이지로 이동
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CleanupGuidePage(),
+                      ),
+                    );
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '정리하기란?',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.8),
+                          decoration: TextDecoration.underline,
+                          decorationColor: Colors.white.withOpacity(0.8),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -152,22 +179,47 @@ class _MapPageState extends State<MapPage> {
   late WebViewController _webViewController;
   double _currentSpeed = 0.0;
   Timer? _speedTimer;
+  Timer? _rideTimer;
+  int _rideSeconds = 0;
   String _currentZone = 'normal'; // normal, restricted, extra_cost, not_folded
   bool _showDebugButtons = true; // 🔧 false로 변경하면 테스트 버튼 숨김
+
+  // 요금 계산
+  int get _baseFare => 1000;
+  int get _perMinuteFare => 200;
+  int get _totalFare => _baseFare + ((_rideSeconds ~/ 60) * _perMinuteFare);
+  int get _rideMinutes => _rideSeconds ~/ 60;
+  int get _earnedPoints => (_totalFare * 0.01).floor();
 
   @override
   void initState() {
     super.initState();
     _getCurrentLocation();
-    if (widget.isAuthenticated) {
+    if (widget.isAuthenticated && !widget.isCleanupMode) {
       _startSpeedTracking();
+      _startRideTimer();
     }
   }
 
   @override
   void dispose() {
     _speedTimer?.cancel();
+    _rideTimer?.cancel();
     super.dispose();
+  }
+
+  void _startRideTimer() {
+    _rideTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        _rideSeconds++;
+      });
+    });
+  }
+
+  String _formatRideTime() {
+    int minutes = _rideSeconds ~/ 60;
+    int seconds = _rideSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
   void _startSpeedTracking() {
@@ -203,46 +255,17 @@ class _MapPageState extends State<MapPage> {
       ..loadHtmlString(_getNaverMapHtml(lat, lng), baseUrl: 'http://localhost');
   }
 
-  // 구역 폴리곤 업데이트
+  // 구역 폴리곤 업데이트 (자동 폴리곤 생성 제거)
   void _updateZonePolygon() {
-    if (_currentPosition == null) return;
-
-    String polygonColor = '';
-    String polygonOpacity = '0.3';
-
-    if (_currentZone == 'normal') {
-      polygonColor = '#4285F4'; // 파란색
-    } else if (_currentZone == 'extra_cost') {
-      polygonColor = '#757575'; // 회색
-    } else {
-      // restricted, not_folded는 폴리곤 표시 안함
-      _webViewController.runJavaScript('removePolygon();');
-      return;
-    }
-
-    // 현재 위치 주변에 다각형 폴리곤 생성 (예시)
-    double lat = _currentPosition!.latitude;
-    double lng = _currentPosition!.longitude;
-
-    // 불규칙한 다각형 좌표 생성
-    String polygonCoords =
-        '''
-      [
-        new naver.maps.LatLng(${lat + 0.002}, ${lng - 0.003}),
-        new naver.maps.LatLng(${lat + 0.003}, ${lng + 0.001}),
-        new naver.maps.LatLng(${lat + 0.002}, ${lng + 0.004}),
-        new naver.maps.LatLng(${lat - 0.001}, ${lng + 0.003}),
-        new naver.maps.LatLng(${lat - 0.002}, ${lng + 0.001}),
-        new naver.maps.LatLng(${lat - 0.001}, ${lng - 0.002})
-      ]
-    ''';
-
-    _webViewController.runJavaScript('''
-      updatePolygon($polygonCoords, '$polygonColor', $polygonOpacity);
-    ''');
+    // 자동으로 생성되는 폴리곤을 표시하지 않음
+    // 경희대 주변 직접 생성한 폴리곤만 유지
   }
 
   String _getNaverMapHtml(double lat, double lng) {
+    // 테스트용: 지도 중심을 경희대 국제캠퍼스로 고정
+    double fixedLat = 37.2410;
+    double fixedLng = 127.0805;
+    
     return '''
 <!DOCTYPE html>
 <html>
@@ -253,38 +276,188 @@ class _MapPageState extends State<MapPage> {
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; }
         #map { width: 100%; height: 100%; }
+        .legend {
+            position: absolute;
+            bottom: 80px;
+            left: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            font-size: 12px;
+            z-index: 1000;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 4px 0;
+        }
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            margin-right: 8px;
+        }
     </style>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=lvipoxk1bz"></script>
 </head>
 <body>
     <div id="map"></div>
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color" style="background: rgba(66, 133, 244, 0.5);"></div>
+            <span>정상 구역</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: rgba(255, 193, 7, 0.5);"></div>
+            <span>추가 비용 구역</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: rgba(244, 67, 54, 0.5);"></div>
+            <span>반납 불가 구역</span>
+        </div>
+    </div>
     <script>
         var mapOptions = {
-            center: new naver.maps.LatLng($lat, $lng),
-            zoom: 16
+            center: new naver.maps.LatLng($fixedLat, $fixedLng),
+            zoom: 15
         };
         
         var map = new naver.maps.Map('map', mapOptions);
         
-        var marker = new naver.maps.Marker({
-            position: new naver.maps.LatLng($lat, $lng),
+        // === 경희대 국제캠퍼스 주변 구역 데이터 ===
+        
+        // 반납 불가 구역 (빨간색) - 경희대 국제캠퍼스 부지만
+        var restrictedZone1 = new naver.maps.Polygon({
             map: map,
-            icon: {
-                content: '<div style="background: #4285F4; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>',
-                anchor: new naver.maps.Point(10, 10)
-            }
+            paths: [
+                new naver.maps.LatLng(37.242830, 127.076456),
+                new naver.maps.LatLng(37.246192, 127.075972),
+                new naver.maps.LatLng(37.247380, 127.078319),
+                new naver.maps.LatLng(37.247908, 127.080935),
+                new naver.maps.LatLng(37.239478, 127.089177),
+                new naver.maps.LatLng(37.236177, 127.084367),
+            ],
+            fillColor: '#F44336',
+            fillOpacity: 0.35,
+            strokeColor: '#F44336',
+            strokeOpacity: 0.7,
+            strokeWeight: 2
+        });
+        
+        // 정상 구역 1 (파란색) - 영통역 아이파크 주변 상업지구
+        var normalZone1 = new naver.maps.Polygon({
+            map: map,
+            paths: [
+                new naver.maps.LatLng(37.251400, 127.071292),
+                new naver.maps.LatLng(37.255787, 127.075540),
+                new naver.maps.LatLng(37.253137, 127.080057),
+                new naver.maps.LatLng(37.250395, 127.080771),
+                new naver.maps.LatLng(37.248688, 127.079330),
+                new naver.maps.LatLng(37.248749, 127.075732)
+            ],
+            fillColor: '#4285F4',
+            fillOpacity: 0.3,
+            strokeColor: '#4285F4',
+            strokeOpacity: 0.6,
+            strokeWeight: 2
+        });
+        
+        
+        // 정상 구역 3 (파란색) - 서천중학교 앞 상가
+        var normalZone3 = new naver.maps.Polygon({
+            map: map,
+            paths: [
+                new naver.maps.LatLng(37.243289, 127.073910),
+                new naver.maps.LatLng(37.241525, 127.070860),
+                new naver.maps.LatLng(37.240474, 127.071725),
+                new naver.maps.LatLng(37.240124, 127.074912),
+                new naver.maps.LatLng(37.243313, 127.075837)
+            ],
+            fillColor: '#4285F4',
+            fillOpacity: 0.3,
+            strokeColor: '#4285F4',
+            strokeOpacity: 0.6,
+            strokeWeight: 2
+        });
+
+                // 정상 구역 4 (파란색) - 서천중학교 앞 상가
+        var normalZone4 = new naver.maps.Polygon({
+            map: map,
+            paths: [
+                new naver.maps.LatLng(37.239882, 127.075003),
+                new naver.maps.LatLng(37.238276, 127.076565),
+                new naver.maps.LatLng(37.236403, 127.076672),
+                new naver.maps.LatLng(37.236126, 127.078993),
+                new naver.maps.LatLng(37.238687, 127.079160),
+                new naver.maps.LatLng(37.240184, 127.077688),
+                new naver.maps.LatLng(37.239931, 127.077021),
+                new naver.maps.LatLng(37.240704, 127.075579)
+            ],
+            fillColor: '#4285F4',
+            fillOpacity: 0.3,
+            strokeColor: '#4285F4',
+            strokeOpacity: 0.6,
+            strokeWeight: 2
+        });
+        
+        // 추가 비용 구역 1 (노란색) - 서천마을 쌍용예가아파트
+        var extraCostZone1 = new naver.maps.Polygon({
+            map: map,
+            paths: [
+                new naver.maps.LatLng(37.234664, 127.068281),
+                new naver.maps.LatLng(37.239061, 127.068357),
+                new naver.maps.LatLng(37.240100, 127.070815),
+                new naver.maps.LatLng(37.239834, 127.074517),
+                new naver.maps.LatLng(37.234652, 127.070147),
+            ],
+            fillColor: '#FFC107',
+            fillOpacity: 0.35,
+            strokeColor: '#FFC107',
+            strokeOpacity: 0.7,
+            strokeWeight: 2
+        });
+        
+        // 추가 비용 구역 2 (노란색) - 휴먼시아 아파트
+        var extraCostZone2 = new naver.maps.Polygon({
+            map: map,
+            paths: [
+                new naver.maps.LatLng(37.243518, 127.075321),
+                new naver.maps.LatLng(37.243373, 127.074077),
+                new naver.maps.LatLng(37.245137, 127.068736),
+                new naver.maps.LatLng(37.246272, 127.069510),
+                new naver.maps.LatLng(37.247238, 127.075579)
+            ],
+            fillColor: '#FFC107',
+            fillOpacity: 0.35,
+            strokeColor: '#FFC107',
+            strokeOpacity: 0.7,
+            strokeWeight: 2
+        });
+        
+        // 추가 비용 구역 3 (노란색) - 영통뜨란채 아파트
+        var extraCostZone3 = new naver.maps.Polygon({
+            map: map,
+            paths: [
+                new naver.maps.LatLng(37.246767, 127.067355),
+                new naver.maps.LatLng(37.251067, 127.071376),
+                new naver.maps.LatLng(37.248603, 127.075594),
+                new naver.maps.LatLng(37.247818, 127.075564),
+            ],
+            fillColor: '#FFC107',
+            fillOpacity: 0.35,
+            strokeColor: '#FFC107',
+            strokeOpacity: 0.7,
+            strokeWeight: 2
         });
         
         var currentPolygon = null;
         
         // 폴리곤 업데이트 함수
         function updatePolygon(paths, color, opacity) {
-            // 기존 폴리곤 제거
             if (currentPolygon) {
                 currentPolygon.setMap(null);
             }
-            
-            // 새 폴리곤 생성
             currentPolygon = new naver.maps.Polygon({
                 map: map,
                 paths: paths,
@@ -433,8 +606,12 @@ class _MapPageState extends State<MapPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        const PaymentMethodPage(extraCost: 2000),
+                    builder: (context) => PaymentMethodPage(
+                      extraCost: 2000,
+                      rideMinutes: _rideMinutes,
+                      totalFare: _totalFare,
+                      earnedPoints: _earnedPoints,
+                    ),
                   ),
                 );
               },
@@ -448,7 +625,12 @@ class _MapPageState extends State<MapPage> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => const PaymentMethodPage(extraCost: 0),
+          builder: (context) => PaymentMethodPage(
+            extraCost: 0,
+            rideMinutes: _rideMinutes,
+            totalFare: _totalFare,
+            earnedPoints: _earnedPoints,
+          ),
         ),
       );
     }
@@ -694,7 +876,9 @@ class _MapPageState extends State<MapPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.isAuthenticated ? '주행 중' : '킥보드 찾기'),
+        title: Text(widget.isAuthenticated
+            ? (widget.isCleanupMode ? '정리 중' : '주행 중')
+            : '킥보드 찾기'),
         backgroundColor: Colors.blue,
         automaticallyImplyLeading: !widget.isAuthenticated,
       ),
@@ -914,7 +1098,7 @@ class _MapPageState extends State<MapPage> {
                                 ),
                               ),
                               child: const Text(
-                                '정리하기',
+                                '정리완료',
                                 style: TextStyle(
                                   fontSize: 18,
                                   color: Colors.white,
@@ -982,30 +1166,100 @@ class _MapPageState extends State<MapPage> {
                         ],
                       )
                     else // 일반 대여하기 모드
-                      ElevatedButton(
-                        onPressed: _handleReturn,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 18),
-                          backgroundColor: Colors.red,
-                          minimumSize: const Size(double.infinity, 56),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                      Column(
+                        children: [
+                          // 탑승 시간 및 요금 표시
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 5,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                Column(
+                                  children: [
+                                    const Text(
+                                      '탑승 시간',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _formatRideTime(),
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Container(
+                                  width: 1,
+                                  height: 40,
+                                  color: Colors.grey.shade300,
+                                ),
+                                Column(
+                                  children: [
+                                    const Text(
+                                      '예상 요금',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${_totalFare.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}원',
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.logout, color: Colors.white),
-                            SizedBox(width: 10),
-                            Text(
-                              '반납하기',
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.white,
+                          ElevatedButton(
+                            onPressed: _handleReturn,
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              backgroundColor: Colors.red,
+                              minimumSize: const Size(double.infinity, 56),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                          ],
-                        ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.logout, color: Colors.white),
+                                SizedBox(width: 10),
+                                Text(
+                                  '반납하기',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                   ],
                 ),
@@ -1021,8 +1275,17 @@ class _MapPageState extends State<MapPage> {
 // 결제 수단 화면
 class PaymentMethodPage extends StatefulWidget {
   final int extraCost;
+  final int rideMinutes;
+  final int totalFare;
+  final int earnedPoints;
 
-  const PaymentMethodPage({super.key, this.extraCost = 0});
+  const PaymentMethodPage({
+    super.key,
+    this.extraCost = 0,
+    this.rideMinutes = 0,
+    this.totalFare = 1000,
+    this.earnedPoints = 10,
+  });
 
   @override
   State<PaymentMethodPage> createState() => _PaymentMethodPageState();
@@ -1242,8 +1505,12 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>
-                          PaymentAmountPage(extraCost: widget.extraCost),
+                      builder: (context) => PaymentAmountPage(
+                        extraCost: widget.extraCost,
+                        rideMinutes: widget.rideMinutes,
+                        totalFare: widget.totalFare,
+                        earnedPoints: widget.earnedPoints,
+                      ),
                     ),
                   );
                 },
@@ -1271,8 +1538,17 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
 // 금액 결제 화면 (신규)
 class PaymentAmountPage extends StatefulWidget {
   final int extraCost;
+  final int rideMinutes;
+  final int totalFare;
+  final int earnedPoints;
 
-  const PaymentAmountPage({super.key, this.extraCost = 0});
+  const PaymentAmountPage({
+    super.key,
+    this.extraCost = 0,
+    this.rideMinutes = 0,
+    this.totalFare = 1000,
+    this.earnedPoints = 10,
+  });
 
   @override
   State<PaymentAmountPage> createState() => _PaymentAmountPageState();
@@ -1290,7 +1566,7 @@ class _PaymentAmountPageState extends State<PaymentAmountPage> {
 
   @override
   Widget build(BuildContext context) {
-    const int basePrice = 2300;
+    final int basePrice = widget.totalFare;
     final int pointsToUse = int.tryParse(_pointsController.text) ?? 0;
     final int subtotal = basePrice + widget.extraCost;
     final int totalPrice = subtotal - pointsToUse;
@@ -1352,16 +1628,31 @@ class _PaymentAmountPageState extends State<PaymentAmountPage> {
                       ),
                       child: Column(
                         children: [
+                          // 이용 시간
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                '이용 시간',
+                                style: TextStyle(fontSize: 15),
+                              ),
+                              Text(
+                                '${widget.rideMinutes}분',
+                                style: const TextStyle(fontSize: 15),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
                           // 기본 요금
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text(
-                                '기본 요금',
+                                '이용 요금 (기본 1,000 + 분당 200)',
                                 style: TextStyle(fontSize: 15),
                               ),
                               Text(
-                                '${basePrice.toString()}원',
+                                '${basePrice.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}원',
                                 style: const TextStyle(fontSize: 15),
                               ),
                             ],
@@ -1512,11 +1803,15 @@ class _PaymentAmountPageState extends State<PaymentAmountPage> {
                   }
 
                   // 반납 완료 화면으로 이동
+                  final int finalEarnedPoints = (totalPrice * 0.01).floor();
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>
-                          ReturnSuccessPage(totalPrice: subtotal),
+                      builder: (context) => ReturnSuccessPage(
+                        totalPrice: totalPrice,
+                        rideMinutes: widget.rideMinutes,
+                        earnedPoints: finalEarnedPoints,
+                      ),
                     ),
                     (route) => false,
                   );
@@ -1586,7 +1881,10 @@ class _NFCAuthPageState extends State<NFCAuthPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('NFC 인증'), backgroundColor: Colors.blue),
+      appBar: AppBar(
+        title: const Text('NFC 인증'),
+        backgroundColor: Colors.blue,
+      ),
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -1714,8 +2012,15 @@ class _AuthSuccessPageState extends State<AuthSuccessPage> {
 // 5. 반납 완료 화면
 class ReturnSuccessPage extends StatefulWidget {
   final int totalPrice;
+  final int rideMinutes;
+  final int earnedPoints;
 
-  const ReturnSuccessPage({super.key, required this.totalPrice});
+  const ReturnSuccessPage({
+    super.key,
+    required this.totalPrice,
+    this.rideMinutes = 0,
+    this.earnedPoints = 0,
+  });
 
   @override
   State<ReturnSuccessPage> createState() => _ReturnSuccessPageState();
@@ -1738,10 +2043,6 @@ class _ReturnSuccessPageState extends State<ReturnSuccessPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 적립 포인트 계산 (기본 요금의 1%, 추가 비용 제외)
-    const int basePrice = 2300;
-    final int rewardPoints = (basePrice * 0.01).round();
-
     return Scaffold(
       backgroundColor: Colors.blue,
       body: SafeArea(
@@ -1779,16 +2080,16 @@ class _ReturnSuccessPageState extends State<ReturnSuccessPage> {
                 ),
                 child: Column(
                   children: [
-                    const Row(
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
+                        const Text(
                           '이용 시간',
                           style: TextStyle(color: Colors.white70, fontSize: 16),
                         ),
                         Text(
-                          '23분',
-                          style: TextStyle(
+                          '${widget.rideMinutes}분',
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -1805,7 +2106,7 @@ class _ReturnSuccessPageState extends State<ReturnSuccessPage> {
                           style: TextStyle(color: Colors.white70, fontSize: 16),
                         ),
                         Text(
-                          '${widget.totalPrice.toString()}원',
+                          '${widget.totalPrice.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}원',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
@@ -1823,7 +2124,7 @@ class _ReturnSuccessPageState extends State<ReturnSuccessPage> {
                           style: TextStyle(color: Colors.white70, fontSize: 16),
                         ),
                         Text(
-                          '${rewardPoints.toString()}원',
+                          '+${widget.earnedPoints}P',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
@@ -1995,6 +2296,303 @@ class _CleanupCancelPageState extends State<CleanupCancelPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// 정리하기 가이드 페이지
+class CleanupGuidePage extends StatelessWidget {
+  const CleanupGuidePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey.shade100,
+      appBar: AppBar(
+        title: const Text('정리하기 가이드'),
+        backgroundColor: Colors.green,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 정리하기란? 섹션
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.green.shade400, Colors.green.shade600],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.green.withOpacity(0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.electric_scooter,
+                      size: 50,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      '정리하기란?',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      '길거리에 방치된 킥보드를 발견하셨나요?\n직접 반납 구역으로 정리해주시면\n포인트를 드려요!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.white,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.monetization_on,
+                            color: Colors.green.shade600,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '정리 시 포인트 적립!',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 30),
+              // 이용 방법 타이틀
+              const Text(
+                '이용 방법',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // STEP 1
+              _buildStepCard(
+                stepNumber: 1,
+                icon: Icons.search,
+                iconColor: Colors.blue,
+                title: '킥보드 발견',
+                subtitle: '방치된 킥보드를 발견하면',
+                description: '정리하기 버튼을 눌러주세요.',
+              ),
+              // 연결선
+              _buildConnector(),
+              // STEP 2
+              _buildStepCard(
+                stepNumber: 2,
+                icon: Icons.nfc,
+                iconColor: Colors.orange,
+                title: 'NFC 인증',
+                subtitle: 'NFC 인증 후',
+                description: '킥보드를 접어서 손잡이를 잡고 이동합니다.',
+              ),
+              // 연결선
+              _buildConnector(),
+              // STEP 3
+              _buildStepCard(
+                stepNumber: 3,
+                icon: Icons.location_on,
+                iconColor: Colors.green,
+                title: '정리 완료',
+                subtitle: '반납 구역에 도착하면',
+                description: '정리 완료 시 포인트가 지급됩니다.',
+              ),
+              const SizedBox(height: 30),
+              // 하단 버튼
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: Colors.green,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    '확인',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepCard({
+    required int stepNumber,
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required String description,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 스텝 아이콘
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: iconColor, size: 28),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          // 내용
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: iconColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'STEP $stepNumber',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.arrow_forward,
+                      size: 16,
+                      color: iconColor,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        description,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConnector() {
+    return Container(
+      margin: const EdgeInsets.only(left: 47),
+      height: 24,
+      child: VerticalDivider(
+        color: Colors.grey.shade300,
+        thickness: 2,
+        width: 2,
       ),
     );
   }
