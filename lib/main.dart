@@ -124,6 +124,32 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 15),
+                // 대여하기란? 텍스트 버튼
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const RentalGuidePage(),
+                      ),
+                    );
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '대여하기란?',
+                        style: TextStyle(
+                          fontSize: 17,
+                          color: Colors.white.withOpacity(0.85),
+                          decoration: TextDecoration.underline,
+                          decorationColor: Colors.white.withOpacity(0.85),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
                 // 정리하기란? 텍스트 버튼 - 가이드 페이지로 이동
                 GestureDetector(
                   onTap: () {
@@ -140,10 +166,10 @@ class HomePage extends StatelessWidget {
                       Text(
                         '정리하기란?',
                         style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 17,
+                          color: Colors.white.withOpacity(0.85),
                           decoration: TextDecoration.underline,
-                          decorationColor: Colors.white.withOpacity(0.8),
+                          decorationColor: Colors.white.withOpacity(0.85),
                         ),
                       ),
                     ],
@@ -261,6 +287,30 @@ class _MapPageState extends State<MapPage> {
     // 경희대 주변 직접 생성한 폴리곤만 유지
   }
 
+  Widget _buildLegendItem(Color color, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 18,
+          height: 18,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
   String _getNaverMapHtml(double lat, double lng) {
     // 테스트용: 지도 중심을 경희대 국제캠퍼스로 고정
     double fixedLat = 37.2410;
@@ -276,47 +326,11 @@ class _MapPageState extends State<MapPage> {
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; }
         #map { width: 100%; height: 100%; }
-        .legend {
-            position: absolute;
-            bottom: 80px;
-            left: 10px;
-            background: white;
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            font-size: 12px;
-            z-index: 1000;
-        }
-        .legend-item {
-            display: flex;
-            align-items: center;
-            margin: 4px 0;
-        }
-        .legend-color {
-            width: 16px;
-            height: 16px;
-            border-radius: 3px;
-            margin-right: 8px;
-        }
     </style>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=lvipoxk1bz"></script>
 </head>
 <body>
     <div id="map"></div>
-    <div class="legend">
-        <div class="legend-item">
-            <div class="legend-color" style="background: rgba(66, 133, 244, 0.5);"></div>
-            <span>정상 구역</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: rgba(255, 193, 7, 0.5);"></div>
-            <span>추가 비용 구역</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: rgba(244, 67, 54, 0.5);"></div>
-            <span>반납 불가 구역</span>
-        </div>
-    </div>
     <script>
         var mapOptions = {
             center: new naver.maps.LatLng($fixedLat, $fixedLng),
@@ -401,7 +415,7 @@ class _MapPageState extends State<MapPage> {
             strokeWeight: 2
         });
         
-        // 추가 비용 구역 1 (노란색) - 서천마을 쌍용예가아파트
+        // 추가 비용 구역 1 (옅은 회색) - 서천마을 쌍용예가아파트
         var extraCostZone1 = new naver.maps.Polygon({
             map: map,
             paths: [
@@ -411,14 +425,14 @@ class _MapPageState extends State<MapPage> {
                 new naver.maps.LatLng(37.239834, 127.074517),
                 new naver.maps.LatLng(37.234652, 127.070147),
             ],
-            fillColor: '#FFC107',
-            fillOpacity: 0.35,
-            strokeColor: '#FFC107',
+            fillColor: '#616161',
+            fillOpacity: 0.45,
+            strokeColor: '#616161',
             strokeOpacity: 0.7,
             strokeWeight: 2
         });
         
-        // 추가 비용 구역 2 (노란색) - 휴먼시아 아파트
+        // 추가 비용 구역 2 (옅은 회색) - 휴먼시아 아파트
         var extraCostZone2 = new naver.maps.Polygon({
             map: map,
             paths: [
@@ -428,14 +442,14 @@ class _MapPageState extends State<MapPage> {
                 new naver.maps.LatLng(37.246272, 127.069510),
                 new naver.maps.LatLng(37.247238, 127.075579)
             ],
-            fillColor: '#FFC107',
-            fillOpacity: 0.35,
-            strokeColor: '#FFC107',
+            fillColor: '#9E9E9E',
+            fillOpacity: 0.4,
+            strokeColor: '#9E9E9E',
             strokeOpacity: 0.7,
             strokeWeight: 2
         });
         
-        // 추가 비용 구역 3 (노란색) - 영통뜨란채 아파트
+        // 추가 비용 구역 3 (짙은 회색) - 영통뜨란채 아파트
         var extraCostZone3 = new naver.maps.Polygon({
             map: map,
             paths: [
@@ -444,9 +458,26 @@ class _MapPageState extends State<MapPage> {
                 new naver.maps.LatLng(37.248603, 127.075594),
                 new naver.maps.LatLng(37.247818, 127.075564),
             ],
-            fillColor: '#FFC107',
-            fillOpacity: 0.35,
-            strokeColor: '#FFC107',
+            fillColor: '#9E9E9E',
+            fillOpacity: 0.4,
+            strokeColor: '#9E9E9E',
+            strokeOpacity: 0.7,
+            strokeWeight: 2
+        });
+
+        var extraCostZone4 = new naver.maps.Polygon({
+            map: map,
+            paths: [
+                new naver.maps.LatLng(37.255897, 127.075922),
+                new naver.maps.LatLng(37.253409, 127.079928),
+                new naver.maps.LatLng(37.254496, 127.080535),
+                new naver.maps.LatLng(37.256839, 127.079837),
+                new naver.maps.LatLng(37.259049, 127.080231),
+                new naver.maps.LatLng(37.259798, 127.079533),
+            ],
+            fillColor: '#616161',
+            fillOpacity: 0.45,
+            strokeColor: '#616161',
             strokeOpacity: 0.7,
             strokeWeight: 2
         });
@@ -950,71 +981,104 @@ class _MapPageState extends State<MapPage> {
                 ),
               ),
 
-            // 구역 표시 (인증 후에만)
-            if (widget.isAuthenticated)
-              Positioned(
-                top: 20,
-                left: 20,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: _showDebugButtons ? _showZoneSelector : null,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 15,
-                      vertical: 12,
-                    ),
+            // 범례 패널 (항상 표시) + 구역 표시 (인증 후에만)
+            Positioned(
+              top: 20,
+              left: 20,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 범례 (항상 표시)
+                  Container(
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: _currentZone == 'restricted'
-                          ? Colors.red
-                          : _currentZone == 'extra_cost'
-                          ? Colors.grey.shade700
-                          : _currentZone == 'not_folded'
-                          ? Colors.orange
-                          : Colors.blue,
-                      borderRadius: BorderRadius.circular(15),
-                      boxShadow: _showDebugButtons
-                          ? [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _currentZone == 'restricted'
-                              ? Icons.block
-                              : _currentZone == 'extra_cost'
-                              ? Icons.attach_money
-                              : _currentZone == 'not_folded'
-                              ? Icons.warning_amber
-                              : Icons.check_circle,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          _currentZone == 'restricted'
-                              ? '반납 불가'
-                              : _currentZone == 'extra_cost'
-                              ? '추가 비용'
-                              : _currentZone == 'not_folded'
-                              ? '접히지 않음'
-                              : '정상 구역',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildLegendItem(Colors.blue, '정상 구역'),
+                        const SizedBox(height: 8),
+                        _buildLegendItem(Colors.grey, '추가 비용'),
+                        const SizedBox(height: 8),
+                        _buildLegendItem(Colors.red, '반납 불가'),
+                      ],
+                    ),
                   ),
-                ),
+                  // 현재 구역 표시 (인증 후에만)
+                  if (widget.isAuthenticated) ...[
+                    const SizedBox(height: 10),
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _showDebugButtons ? _showZoneSelector : null,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 15,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _currentZone == 'restricted'
+                              ? Colors.red
+                              : _currentZone == 'extra_cost'
+                              ? Colors.grey.shade700
+                              : _currentZone == 'not_folded'
+                              ? Colors.orange
+                              : Colors.blue,
+                          borderRadius: BorderRadius.circular(15),
+                          boxShadow: _showDebugButtons
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _currentZone == 'restricted'
+                                  ? Icons.block
+                                  : _currentZone == 'extra_cost'
+                                  ? Icons.attach_money
+                                  : _currentZone == 'not_folded'
+                                  ? Icons.warning_amber
+                                  : Icons.check_circle,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              _currentZone == 'restricted'
+                                  ? '반납 불가'
+                                  : _currentZone == 'extra_cost'
+                                  ? '추가 비용'
+                                  : _currentZone == 'not_folded'
+                                  ? '접히지 않음'
+                                  : '정상 구역',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
+            ),
 
             // 하단 버튼
             Positioned(
@@ -1915,17 +1979,12 @@ class _NFCAuthPageState extends State<NFCAuthPage> {
                       backgroundColor: Colors.green,
                     ),
                     child: const Text(
-                      '인증하기 (테스트용)',
+                      '인증하기',
                       style: TextStyle(fontSize: 16, color: Colors.white),
                     ),
                   )
                 else
                   const CircularProgressIndicator(),
-                const SizedBox(height: 20),
-                const Text(
-                  '※ NFC 없을 때 테스트용',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
               ],
             ),
           ),
@@ -2297,6 +2356,423 @@ class _CleanupCancelPageState extends State<CleanupCancelPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+// 정리하기 가이드 페이지
+// 대여하기 가이드 페이지
+class RentalGuidePage extends StatelessWidget {
+  const RentalGuidePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey.shade100,
+      appBar: AppBar(
+        title: const Text('대여하기 가이드'),
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 대여하기란? 섹션
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.blue.shade400, Colors.blue.shade600],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withOpacity(0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.electric_scooter,
+                      size: 50,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      '대여하기란?',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      '원하는 곳에서 킥보드를 대여하고\n목적지까지 편리하게 이동하세요!\n이용 요금은 반납 시 자동 결제됩니다.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.white,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.attach_money,
+                            color: Colors.blue.shade600,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '기본 1,000원 + 분당 200원',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 30),
+              // 이용 방법 타이틀
+              const Text(
+                '이용 방법',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // STEP 1
+              _buildStepCard(
+                stepNumber: 1,
+                icon: Icons.qr_code_scanner,
+                iconColor: Colors.blue,
+                title: 'NFC 인증',
+                subtitle: '대여하기 버튼을 누른 후',
+                description: '킥보드의 NFC 태그에 휴대폰을 가까이 대세요.',
+              ),
+              // 연결선
+              _buildConnector(),
+              // STEP 2
+              _buildStepCard(
+                stepNumber: 2,
+                icon: Icons.directions_bike,
+                iconColor: Colors.orange,
+                title: '주행하기',
+                subtitle: '인증이 완료되면',
+                description: '킥보드를 타고 목적지까지 이동하세요.',
+              ),
+              // 연결선
+              _buildConnector(),
+              // STEP 3
+              _buildStepCard(
+                stepNumber: 3,
+                icon: Icons.location_on,
+                iconColor: Colors.green,
+                title: '반납하기',
+                subtitle: '정상 구역에 도착하면',
+                description: '반납하기 버튼을 눌러 결제를 완료하세요.',
+              ),
+              const SizedBox(height: 30),
+              // 요금 안내
+              // 구역 안내
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '🗺️ 구역 안내',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildZoneRow(Colors.blue, '정상 구역', '추가 비용 없이 반납 가능'),
+                    const SizedBox(height: 8),
+                    _buildZoneRow(Colors.grey, '추가 비용 구역', '반납 시 추가 요금 발생'),
+                    const SizedBox(height: 8),
+                    _buildZoneRow(Colors.red, '반납 불가 구역', '해당 구역에서 반납 불가'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              // 요금 안내
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '💰 요금 안내',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildFeeRow('기본 요금', '1,000원'),
+                    _buildFeeRow('분당 요금', '200원'),
+                    _buildFeeRow('추가 비용 1단계 구역', '+1,000원'),
+                    _buildFeeRow('추가 비용 2단계 구역', '+2,000원'),
+                    const Divider(height: 20),
+                    _buildFeeRow('포인트 적립', '결제 금액의 1%', isHighlight: true),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              // 하단 버튼
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: Colors.blue,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    '확인',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepCard({
+    required int stepNumber,
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required String description,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: iconColor, size: 28),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: iconColor,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        'STEP $stepNumber',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConnector() {
+    return Container(
+      margin: const EdgeInsets.only(left: 38),
+      height: 24,
+      child: VerticalDivider(
+        color: Colors.grey.shade300,
+        thickness: 2,
+        width: 2,
+      ),
+    );
+  }
+
+  Widget _buildFeeRow(String label, String value, {bool isHighlight = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              color: isHighlight ? Colors.blue.shade700 : Colors.grey.shade700,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: isHighlight ? Colors.blue.shade700 : Colors.black87,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildZoneRow(Color color, String title, String description) {
+    return Row(
+      children: [
+        Container(
+          width: 16,
+          height: 16,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                description,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
