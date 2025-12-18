@@ -316,6 +316,53 @@ class _MapPageState extends State<MapPage> {
     double fixedLat = 37.2410;
     double fixedLng = 127.0805;
     
+    // 킥보드 마커는 킥보드 찾기 화면에서만 표시
+    String scooterMarkersScript = '';
+    if (!widget.isAuthenticated && !widget.isCleanupMode) {
+      scooterMarkersScript = '''
+        // 킥보드 위치 데이터 (경희대 국제캠퍼스 주변)
+        var scooterLocations = [
+            { lat: 37.251093, lng: 127.075578 },
+            { lat: 37.253434, lng: 127.075776 },
+            { lat: 37.251237, lng: 127.079475 },
+            { lat: 37.249111, lng: 127.072528 },
+            { lat: 37.242877, lng: 127.075054 },
+            { lat: 37.239085, lng: 127.077653 },
+            { lat: 37.237735, lng: 127.078898 },
+            { lat: 37.245578, lng: 127.073773 },
+            { lat: 37.244271, lng: 127.072997 },
+            { lat: 37.237562, lng: 127.070760 },
+        ];
+        
+        // 킥보드 마커 생성
+        scooterLocations.forEach(function(scooter) {
+            var markerContent = 
+              '<div style="' +
+              'background: white;' +
+              'border: 3px solid #2196F3;' +
+              'border-radius: 50%;' +
+              'width: 45px;' +
+              'height: 45px;' +
+              'display: flex;' +
+              'align-items: center;' +
+              'justify-content: center;' +
+              'box-shadow: 0 2px 8px rgba(0,0,0,0.25);' +
+              '">' +
+              '<span class="material-icons" style="color: #2196F3; font-size: 28px;">electric_scooter</span>' +
+              '</div>';
+            
+            var marker = new naver.maps.Marker({
+                position: new naver.maps.LatLng(scooter.lat, scooter.lng),
+                map: map,
+                icon: {
+                    content: markerContent,
+                    anchor: new naver.maps.Point(22.5, 22.5)
+                }
+            });
+        });
+      ''';
+    }
+    
     return '''
 <!DOCTYPE html>
 <html>
@@ -323,6 +370,7 @@ class _MapPageState extends State<MapPage> {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>네이버 지도</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; }
         #map { width: 100%; height: 100%; }
@@ -338,6 +386,8 @@ class _MapPageState extends State<MapPage> {
         };
         
         var map = new naver.maps.Map('map', mapOptions);
+        
+        $scooterMarkersScript
         
         // === 경희대 국제캠퍼스 주변 구역 데이터 ===
         
@@ -415,7 +465,7 @@ class _MapPageState extends State<MapPage> {
             strokeWeight: 2
         });
         
-        // 추가 비용 구역 1 (옅은 회색) - 서천마을 쌍용예가아파트
+        // 추가 비용 구역 1 (얇은 회색) - 서천마을 음용예가아파트
         var extraCostZone1 = new naver.maps.Polygon({
             map: map,
             paths: [
@@ -432,7 +482,7 @@ class _MapPageState extends State<MapPage> {
             strokeWeight: 2
         });
         
-        // 추가 비용 구역 2 (옅은 회색) - 휴먼시아 아파트
+        // 추가 비용 구역 2 (얇은 회색) - 휴먼시아 아파트
         var extraCostZone2 = new naver.maps.Polygon({
             map: map,
             paths: [
